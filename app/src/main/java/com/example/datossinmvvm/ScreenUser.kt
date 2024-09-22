@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 
 
 @Composable
-fun ScreenUser() {
+fun ScreenUser(modifier: Modifier) {
     val context = LocalContext.current
     var db: UserDatabase
     var id        by remember { mutableStateOf("") }
