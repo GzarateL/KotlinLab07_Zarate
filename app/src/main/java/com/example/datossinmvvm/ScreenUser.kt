@@ -29,21 +29,23 @@ import androidx.compose.ui.Modifier
 fun ScreenUser(modifier: Modifier) {
     val context = LocalContext.current
     var db: UserDatabase
-    var id        by remember { mutableStateOf("") }
+    var id by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
-    var lastName  by remember { mutableStateOf("") }
-    var dataUser  = remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var dataUser = remember { mutableStateOf("") }
 
     db = crearDatabase(context)
-
     val dao = db.userDao()
-
     val coroutineScope = rememberCoroutineScope()
 
-    Column(modifier = Modifier
+    Column(
+        modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)){
+            .padding(16.dp)
+    ) {
         Spacer(Modifier.height(50.dp))
+
+        // Campo de ID de solo lectura
         TextField(
             value = id,
             onValueChange = { id = it },
@@ -51,43 +53,64 @@ fun ScreenUser(modifier: Modifier) {
             readOnly = true,
             singleLine = true
         )
+
+        // Campo de First Name
         TextField(
             value = firstName,
             onValueChange = { firstName = it },
             label = { Text("First Name: ") },
             singleLine = true
         )
+
+        // Campo de Last Name
         TextField(
             value = lastName,
             onValueChange = { lastName = it },
             label = { Text("Last Name:") },
             singleLine = true
         )
+
+        // Botón para agregar un usuario
         Button(
             onClick = {
-                val user = User(0,firstName, lastName)
+                val user = User(0, firstName, lastName)
                 coroutineScope.launch {
-                    AgregarUsuario(user = user, dao = dao)
+                    AgregarUsuario(user, dao)
                 }
                 firstName = ""
                 lastName = ""
             }
         ) {
-            Text("Agregar Usuario", fontSize=16.sp)
+            Text("Agregar Usuario", fontSize = 16.sp)
         }
+
+        // Botón para listar usuarios
         Button(
             onClick = {
-                val user = User(0,firstName, lastName)
                 coroutineScope.launch {
-                    val data = getUsers( dao = dao)
+                    val data = getUsers(dao)
                     dataUser.value = data
                 }
             }
         ) {
-            Text("Listar Usuarios", fontSize=16.sp)
+            Text("Listar Usuarios", fontSize = 16.sp)
         }
+
+        // Botón para eliminar el último usuario
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    EliminarUltimoUsuario(dao)
+                }
+            }
+        ) {
+            Text("Eliminar Último Usuario", fontSize = 16.sp)
+        }
+
+        // Mostrar los usuarios listados
         Text(
-            text = dataUser.value, fontSize = 20.sp
+            text = dataUser.value,
+            fontSize = 20.sp
         )
     }
 }
@@ -103,23 +126,26 @@ fun crearDatabase(context: Context): UserDatabase {
 
 suspend fun getUsers(dao: UserDao): String {
     var rpta: String = ""
-    //LaunchedEffect(Unit) {
     val users = dao.getAll()
     users.forEach { user ->
-        val fila = user.firstName + " - " + user.lastName + "\n"
+        val fila = "${user.firstName} - ${user.lastName}\n"
         rpta += fila
     }
-    //}
     return rpta
 }
 
-suspend fun AgregarUsuario(user: User, dao:UserDao): Unit {
-    //LaunchedEffect(Unit) {
+suspend fun AgregarUsuario(user: User, dao: UserDao) {
     try {
         dao.insert(user)
+    } catch (e: Exception) {
+        Log.e("User", "Error: insert: ${e.message}")
     }
-    catch (e: Exception) {
-        Log.e("User","Error: insert: ${e.message}")
+}
+
+suspend fun EliminarUltimoUsuario(dao: UserDao) {
+    try {
+        dao.deleteLastUser()
+    } catch (e: Exception) {
+        Log.e("User", "Error: deleteLastUser: ${e.message}")
     }
-    //}
 }
